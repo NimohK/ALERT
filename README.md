@@ -31,7 +31,7 @@
 
 ## 🚧 Current Status
 
-ALERT is COMING SOON!
+ALERT MVP is COMING SOON!
 
 ---
 
