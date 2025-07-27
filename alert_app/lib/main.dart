@@ -1,135 +1,190 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'providers/alert_provider.dart';
-import 'app.dart';
+import 'package:intl/intl.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AlertProvider()),
-      ],
-      child: const AlertApp(),
-    ),
-  );
+void main() {
+  runApp(const AlertApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class AlertApp extends StatelessWidget {
+  const AlertApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Alert App',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primaryColor: const Color(0xFFb76e79),
+        scaffoldBackgroundColor: const Color(0xFFf4d7d7),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFb76e79),
+          primary: const Color(0xFFb76e79),
+          secondary: const Color(0xFFf4d7d7),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFFb76e79),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFb76e79),
+          foregroundColor: Colors.white,
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const HomeScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class Alert {
+  final String description;
+  final String type;
+  final DateTime timestamp;
+  final String location;
+  final String status;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Alert({
+    required this.description,
+    required this.type,
+    required this.timestamp,
+    required this.location,
+    required this.status,
+  });
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final List<Alert> _alerts = [
+    Alert(
+      description: 'Suspicious person spotted',
+      type: 'Break-in',
+      timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
+      location: '123 Main St',
+      status: 'Active',
+    ),
+    Alert(
+      description: 'Fire in apartment',
+      type: 'Fire',
+      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+      location: '456 Oak Ave',
+      status: 'Resolved',
+    ),
+  ];
+
+  void _showNewAlertDialog() async {
+    final newAlert = await showDialog<Alert>(
+      context: context,
+      builder: (context) => NewAlertDialog(),
+    );
+    if (newAlert != null) {
+      setState(() {
+        _alerts.insert(0, newAlert);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Community Alerts'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: ListView.builder(
+        itemCount: _alerts.length,
+        itemBuilder: (context, index) {
+          final alert = _alerts[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: ListTile(
+              leading: Icon(Icons.warning, color: Theme.of(context).primaryColor),
+              title: Text(alert.type),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(alert.description),
+                  Text('Location: ${alert.location}'),
+                  Text('Status: ${alert.status}'),
+                  Text(DateFormat('yyyy-MM-dd HH:mm').format(alert.timestamp)),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showNewAlertDialog,
+        child: const Icon(Icons.add_alert),
+        tooltip: 'Send New Alert',
+      ),
+    );
+  }
+}
+
+class NewAlertDialog extends StatefulWidget {
+  @override
+  State<NewAlertDialog> createState() => _NewAlertDialogState();
+}
+
+class _NewAlertDialogState extends State<NewAlertDialog> {
+  final _formKey = GlobalKey<FormState>();
+  String _description = '';
+  String _type = 'Break-in';
+  final List<String> _types = ['Break-in', 'Fire', 'Domestic', 'Other'];
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Send New Alert'),
+      content: Form(
+        key: _formKey,
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              decoration: const InputDecoration(labelText: 'Description'),
+              onChanged: (val) => _description = val,
+              validator: (val) => val == null || val.isEmpty ? 'Enter a description' : null,
+            ),
+            DropdownButtonFormField<String>(
+              value: _type,
+              items: _types.map((type) => DropdownMenuItem(
+                value: type,
+                child: Text(type),
+              )).toList(),
+              onChanged: (val) => setState(() => _type = val ?? 'Break-in'),
+              decoration: const InputDecoration(labelText: 'Incident Type'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFb76e79),
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              final alert = Alert(
+                description: _description,
+                type: _type,
+                timestamp: DateTime.now(),
+                location: 'Current Location', // Placeholder
+                status: 'Active',
+              );
+              Navigator.of(context).pop(alert);
+            }
+          },
+          child: const Text('Send'),
+        ),
+      ],
     );
   }
 }
